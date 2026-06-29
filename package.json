@@ -1,6 +1,6 @@
 {
   "name": "@tgoliveira/outpost",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A transactional outbox with pluggable transport for Next.js. Durable, at-most-once, auditable transactional email.",
   "keywords": [
     "outbox",
