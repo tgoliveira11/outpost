@@ -6,12 +6,13 @@ name: Publish package to npmjs
 # tarball, publishes it to npm with provenance, then tags and creates a
 # GitHub release.
 #
+# Authentication is OIDC trusted publishing — NO npm token is stored anywhere.
 # One-time setup required before the first run (see docs/publishing.md):
-#   - Create a GitHub Environment named "npmjs".
-#   - Add an `NPM_TOKEN` secret to that environment (an npm "Automation" or
-#     granular publish token for the @tgoliveira scope).
-# Provenance is generated via OIDC (`id-token: write`); no token is embedded
-# in the published attestation.
+#   - The GitHub Environment named "npmjs" exists (already created).
+#   - On npmjs.com, configure this package's Trusted Publisher:
+#       Repository: tgoliveira11/outpost · Workflow: publish.yml · Environment: npmjs
+# The job mints a short-lived OIDC id-token (`id-token: write`); npm exchanges
+# it with the registry and also uses it to generate provenance.
 
 on:
   workflow_dispatch:
@@ -121,10 +122,12 @@ jobs:
           git commit -m "Release ${RELEASE_VERSION}"
           git push origin HEAD:main
 
-      - name: Publish the validated tarball to npmjs
+      - name: Publish the validated tarball to npmjs (OIDC trusted publishing)
         if: steps.registry.outputs.published == 'false'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # No NODE_AUTH_TOKEN: authentication is via the OIDC id-token minted
+        # from `id-token: write`. npm (>=11.5.1) exchanges it with the registry,
+        # which verifies this repo + workflow + environment against the package's
+        # configured trusted publisher, and mints the provenance attestation.
         run: npm publish "${{ steps.pack.outputs.tarball }}" --access public --provenance
 
       - name: Create and push the release tag

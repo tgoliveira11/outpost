@@ -12,22 +12,31 @@ Package: [`@tgoliveira/outpost`](https://www.npmjs.com/package/@tgoliveira/outpo
 
 ## One-time setup (before the first publish)
 
-The workflow authenticates to npm with a token held in a protected GitHub
-Environment, and generates provenance via OIDC.
+The workflow uses **OIDC trusted publishing** — there is **no npm token stored
+anywhere**. The CI job mints a short-lived OIDC id-token, and npm verifies it
+against the package's configured trusted publisher before allowing the publish.
 
-1. **Create a granular npm token** for the `@tgoliveira` scope at
-   <https://www.npmjs.com/settings/tgoliveira/tokens> — an **Automation** or
-   **Granular Access** token with publish rights to this package.
-2. **Create a GitHub Environment** named `npmjs`
-   (repo → Settings → Environments → New environment). Optionally add required
-   reviewers so every publish needs an approval.
-3. **Add the token as a secret** in that environment named **`NPM_TOKEN`**.
-4. (Recommended) On npmjs.com, also enable **2FA** for the account and, if you
-   prefer, configure this repo + `publish.yml` as a **trusted publisher** so the
-   token can be retired later.
+1. The GitHub Environment named **`npmjs`** already exists in this repo (the
+   workflow runs under it; you can add required reviewers for an approval gate).
+2. On npmjs.com, configure the package's **Trusted Publisher** (package page →
+   Settings → Trusted Publishers, or the org/scope settings). Use:
+   - **Provider:** GitHub Actions
+   - **Repository:** `tgoliveira11/outpost`
+   - **Workflow filename:** `publish.yml`
+   - **Environment:** `npmjs`
+3. For the very first publish of a brand-new package name, npm may require you
+   to create the package once (e.g. a manual `npm publish` of the initial
+   version, or initializing it from the dashboard) before trusted publishing can
+   take over. Subsequent releases go entirely through the workflow.
 
-That's the only manual configuration. `package.json` already sets
-`publishConfig.access = "public"` and `publishConfig.provenance = true`.
+That's the only manual configuration — and no secret to rotate. `package.json`
+already sets `publishConfig.access = "public"` and
+`publishConfig.provenance = true`.
+
+> Prefer not to use OIDC? You can instead store an npm **Automation/Granular**
+> token as an `NPM_TOKEN` secret in the `npmjs` environment and add
+> `env: { NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} }` to the publish step. The
+> workflow ships with OIDC because it keeps no long-lived credential.
 
 ## How to cut a release
 
