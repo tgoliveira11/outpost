@@ -17,6 +17,14 @@
   ],
   "license": "MIT",
   "author": "Engineering",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tgoliveira11/outpost.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tgoliveira11/outpost/issues"
+  },
+  "homepage": "https://github.com/tgoliveira11/outpost#readme",
   "type": "module",
   "sideEffects": false,
   "files": [
