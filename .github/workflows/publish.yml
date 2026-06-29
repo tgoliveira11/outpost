@@ -1,0 +1,156 @@
+name: Publish package to npmjs
+
+# Modeled on the next-secure-auth-starter publish process, adapted for this
+# single-package repo. Manually dispatched: it resolves the release version
+# from the CHANGELOG (or an explicit input), validates, packs the exact
+# tarball, publishes it to npm with provenance, then tags and creates a
+# GitHub release.
+#
+# One-time setup required before the first run (see docs/publishing.md):
+#   - Create a GitHub Environment named "npmjs".
+#   - Add an `NPM_TOKEN` secret to that environment (an npm "Automation" or
+#     granular publish token for the @tgoliveira scope).
+# Provenance is generated via OIDC (`id-token: write`); no token is embedded
+# in the published attestation.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Exact x.y.z version or patch, minor, major; leave blank for changelog-based automatic versioning"
+        required: false
+        type: string
+
+concurrency:
+  group: outpost-npm-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: npmjs
+
+    steps:
+      - name: Checkout main with tags
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org/
+          cache: npm
+
+      - name: Install immutable dependencies
+        run: npm ci
+
+      - name: Verify npm supports trusted publishing
+        run: |
+          NPM_VERSION=$(npm --version)
+          node -e "const [major, minor] = process.argv[1].split('.').map(Number); if (major < 11 || (major === 11 && minor < 5)) { throw new Error('Trusted publishing / provenance requires npm 11.5.1 or newer, found ' + process.argv[1]) }" "$NPM_VERSION" \
+            || npm install -g npm@latest
+
+      - name: Audit shipped dependencies for high and critical vulnerabilities
+        run: npm run audit:security
+
+      - name: Prepare release version and changelog
+        id: release
+        env:
+          RELEASE_SPEC: ${{ inputs.version }}
+        run: node scripts/prepare-release.mjs
+
+      - name: Validate types, lint, tests, coverage, and build
+        run: npm run validate
+
+      - name: Build the exact publication tarball
+        id: pack
+        run: |
+          npm pack --json --ignore-scripts > "$RUNNER_TEMP/outpost-pack.json"
+          TARBALL=$(node -e "const fs=require('node:fs'); const data=JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(data[0].filename)" "$RUNNER_TEMP/outpost-pack.json")
+          test -n "$TARBALL"
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether npm already has this version
+        id: registry
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          if npm view "${PACKAGE_NAME}@${RELEASE_VERSION}" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Inspect existing release state
+        id: state
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          RECOVERY_MODE: ${{ steps.release.outputs.recovery }}
+          ALREADY_PUBLISHED: ${{ steps.registry.outputs.published }}
+        run: |
+          if [ "$ALREADY_PUBLISHED" = "true" ] && [ "$RECOVERY_MODE" != "true" ]; then
+            echo "npm version ${RELEASE_VERSION} already exists but this is a new release"
+            exit 1
+          fi
+          if git rev-parse "refs/tags/v${RELEASE_VERSION}" >/dev/null 2>&1; then
+            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+            if [ "$ALREADY_PUBLISHED" != "true" ]; then
+              echo "Tag exists before npm publication; refusing an inconsistent release"
+              exit 1
+            fi
+          else
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push release metadata
+        if: steps.release.outputs.changed == 'true'
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "Release ${RELEASE_VERSION}"
+          git push origin HEAD:main
+
+      - name: Publish the validated tarball to npmjs
+        if: steps.registry.outputs.published == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish "${{ steps.pack.outputs.tarball }}" --access public --provenance
+
+      - name: Create and push the release tag
+        if: steps.state.outputs.tag_exists == 'false'
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          git tag -a "v${RELEASE_VERSION}" -m "Release ${RELEASE_VERSION}"
+          git push origin "v${RELEASE_VERSION}"
+
+      - name: Create GitHub release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          if ! gh release view "v${RELEASE_VERSION}" >/dev/null 2>&1; then
+            gh release create "v${RELEASE_VERSION}" \
+              --title "outpost ${RELEASE_VERSION}" \
+              --generate-notes
+          fi
+
+      - name: Publish summary
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          ALREADY_PUBLISHED: ${{ steps.registry.outputs.published }}
+        run: |
+          echo "## @tgoliveira/outpost ${RELEASE_VERSION}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- npm publication already existed: ${ALREADY_PUBLISHED}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Git tag: v${RELEASE_VERSION}" >> "$GITHUB_STEP_SUMMARY"

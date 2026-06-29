@@ -5,8 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  build-test:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,9 +18,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Test + coverage (≥90% enforced)
-        run: npm run test:coverage
-      - name: Build
-        run: npm run build
+      - name: Validate (typecheck, lint, tests + coverage ≥90%, build)
+        run: npm run validate
+      - name: Verify package contents
+        run: npm pack --dry-run --ignore-scripts

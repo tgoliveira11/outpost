@@ -66,6 +66,10 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate --dialect=postgresql --schema=./src/adapters/drizzle/schema.ts --out=./drizzle",
     "lint": "tsc --noEmit",
+    "validate": "npm run typecheck && npm run lint && npm run test:coverage && npm run build",
+    "audit:security": "npm audit --omit=dev --audit-level=high",
+    "audit:security:all": "npm audit",
+    "prepare:release": "node scripts/prepare-release.mjs",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
