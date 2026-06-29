@@ -21,6 +21,7 @@
   "sideEffects": false,
   "files": [
     "dist",
+    "styles.css",
     "README.md",
     "AGENTS.md",
     "LICENSE"
@@ -46,6 +47,22 @@
       "import": "./dist/http/index.js",
       "require": "./dist/http/index.cjs"
     },
+    "./admin": {
+      "types": "./dist/admin/index.d.ts",
+      "import": "./dist/admin/index.js",
+      "require": "./dist/admin/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js",
+      "require": "./dist/react/index.cjs"
+    },
+    "./react/client": {
+      "types": "./dist/react/client.d.ts",
+      "import": "./dist/react/client.js",
+      "require": "./dist/react/client.cjs"
+    },
+    "./styles.css": "./styles.css",
     "./workers": {
       "types": "./dist/workers/index.d.ts",
       "import": "./dist/workers/index.js",
@@ -58,7 +75,7 @@
     }
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup --config tsup.config.ts && tsup --config tsup.react-client.config.ts && tsup --config tsup.ui.config.ts",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -78,7 +95,10 @@
   "peerDependencies": {
     "@opentelemetry/api": "^1.9.0",
     "drizzle-orm": ">=0.45.2",
-    "nodemailer": ">=9.0.1"
+    "next": ">=14.0.0",
+    "nodemailer": ">=9.0.1",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   },
   "overrides": {
     "esbuild": "^0.25.0"
@@ -89,17 +109,31 @@
     },
     "nodemailer": {
       "optional": true
+    },
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
     }
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.2.17",
     "@opentelemetry/api": "^1.9.0",
     "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "@types/nodemailer": "^6.4.17",
     "@vitest/coverage-v8": "^2.1.9",
     "drizzle-kit": "^0.31.0",
     "drizzle-orm": "^0.45.2",
+    "next": "^16.0.0",
     "nodemailer": "^9.0.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"

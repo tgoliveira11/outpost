@@ -55,6 +55,9 @@ export interface OutboxRepository {
   findByProviderMessageId(providerMessageId: string): Promise<Message | null>;
   list(query: ListMessagesQuery): Promise<Message[]>;
 
+  /** Count rows grouped by lifecycle state (admin observability). */
+  countByState(): Promise<Record<LifecycleState, number>>;
+
   /**
    * Atomically claim a batch of ready messages for sending and mark them
    * `sending`, so concurrent send workers never grab the same row. Postgres

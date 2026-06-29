@@ -1,12 +1,7 @@
 import { defineConfig } from "tsup";
 
 /**
- * Build configuration.
- *
- * Each public subpath export (see package.json `exports`) is its own entry so
- * consumers only pull in what they import. Heavy/optional adapters (nodemailer,
- * @opentelemetry/api) are kept external so they remain peer dependencies and
- * are never bundled into the package.
+ * Core build — server/runtime entries. Runs first with `clean: true`.
  */
 export default defineConfig({
   entry: {
@@ -14,6 +9,7 @@ export default defineConfig({
     "adapters/index": "src/adapters/index.ts",
     "adapters/drizzle/index": "src/adapters/drizzle/index.ts",
     "http/index": "src/http/index.ts",
+    "admin/index": "src/admin/create-outpost-admin.ts",
     "workers/index": "src/workers/index.ts",
     "testing/index": "src/testing/index.ts",
   },
@@ -28,5 +24,8 @@ export default defineConfig({
     "nodemailer",
     "@opentelemetry/api",
     "zod",
+    "react",
+    "react-dom",
+    "next",
   ],
 });

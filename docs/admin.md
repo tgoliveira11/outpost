@@ -1,12 +1,84 @@
 # Administration
 
-> Outpost ships its operator capabilities **headless** — as authenticated API
-> endpoints and typed client methods — so you embed them in your own admin UI
-> rather than adopting a coupled, opinionated panel. This keeps the package
-> reusable across apps with different design systems and auth models.
+> Outpost ships operator capabilities as **authenticated API endpoints**, a
+> **typed client**, and **ready-to-use admin pages** (like `@tgoliveira/secure-auth/react`).
+> Embed the pages in your Next.js app and wire the route handlers — you keep
+> your design system variables and admin authentication.
 
-Everything the TDR's admin panel (§3.12) needs is exposed; the rendering is
-yours. Below is the operator surface and how to reach it.
+## Admin UI (`@tgoliveira/outpost/react`)
+
+Import ready-made pages and mount them under `/admin` in your app:
+
+```tsx
+// app/admin/page.tsx
+import { AdminPanelPage } from "@tgoliveira/outpost/react";
+export default function Page() { return <AdminPanelPage />; }
+
+// app/admin/queue/page.tsx
+import { AdminQueuePage } from "@tgoliveira/outpost/react";
+export default function Page() { return <AdminQueuePage apiBase="/api/outpost" />; }
+
+// app/admin/config/page.tsx
+import { AdminConfigPage } from "@tgoliveira/outpost/react";
+
+// app/admin/observability/page.tsx
+import { AdminObservabilityPage } from "@tgoliveira/outpost/react";
+```
+
+Import `@tgoliveira/outpost/styles.css` from your `globals.css` (after Tailwind) so
+classes are scanned.
+
+| Page | Route suffix | Description |
+|---|---|---|
+| `AdminPanelPage` | `/admin` | Overview cards |
+| `AdminQueuePage` | `/admin/queue` | Queued/sending/failed messages + **Run send worker** |
+| `AdminConfigPage` | `/admin/config` | Vault/env settings — priority **admin → env.local → default** |
+| `AdminObservabilityPage` | `/admin/observability` | Queue depth, last worker run, OTel metric catalog |
+
+Optional `OutpostUIProvider` sets `paths.adminPanel` (default `/admin`).
+
+## Admin API (`@tgoliveira/outpost/admin`)
+
+Wire lazy route handlers in your App Router (mirror secure-auth):
+
+```ts
+// lib/outpost-admin.ts
+import { createOutpostAdmin } from "@tgoliveira/outpost/admin";
+import { DrizzleConfigOverrideRepository } from "@tgoliveira/outpost/drizzle";
+import { outpost } from "./outpost";
+
+export const outpostAdmin = createOutpostAdmin({
+  outpost,
+  configOverrideRepository: new DrizzleConfigOverrideRepository(db),
+  requireAdmin: async (request) => {
+    // Your session/role check — e.g. secure-auth admin user
+    return { actor: "admin:jane" };
+  },
+  env: process.env, // second priority after DB overrides
+});
+```
+
+```ts
+// app/api/outpost/admin/queue/route.ts
+import { outpostAdmin } from "@/lib/outpost-admin";
+export const GET = outpostAdmin.routes.adminQueue.GET;
+
+// app/api/outpost/admin/worker/send/route.ts
+export const POST = outpostAdmin.routes.adminWorkerSend.POST;
+
+// app/api/outpost/admin/config/route.ts
+export const GET = outpostAdmin.routes.adminConfig.GET;
+export const POST = outpostAdmin.routes.adminConfig.POST;
+export const DELETE = outpostAdmin.routes.adminConfig.DELETE;
+
+// app/api/outpost/admin/observability/route.ts
+export const GET = outpostAdmin.routes.adminObservability.GET;
+```
+
+Run the `outpost_admin_config_overrides` migration (see `drizzle/`) before using
+the config page.
+
+---
 
 ## Operator capabilities → where they live
 

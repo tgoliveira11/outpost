@@ -15,7 +15,7 @@ import type { SuppressionEntry, SuppressionReason } from "../domain/suppression.
 import type { ApiKey } from "../domain/api-key.js";
 import type { AuditEvent, NewAuditEvent } from "../domain/audit.js";
 import type { WebhookEvent } from "../domain/webhook.js";
-import { TERMINAL_STATES } from "../domain/lifecycle.js";
+import { TERMINAL_STATES, type LifecycleState } from "../domain/lifecycle.js";
 
 const REDACTED: Sealed = { alg: "redacted", ciphertext: "" };
 
@@ -81,6 +81,23 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     all.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     const offset = query.offset ?? 0;
     return all.slice(offset, offset + (query.limit ?? 50)).map((m) => ({ ...m }));
+  }
+
+  async countByState(): Promise<Record<LifecycleState, number>> {
+    const counts = {
+      queued: 0,
+      sending: 0,
+      sent: 0,
+      delivered: 0,
+      bounced: 0,
+      complained: 0,
+      failed: 0,
+      suppressed: 0,
+    } satisfies Record<LifecycleState, number>;
+    for (const m of this.messages.values()) {
+      counts[m.state]++;
+    }
+    return counts;
   }
 
   async claimBatchForSending(limit: number, now: Date, reclaimBefore: Date): Promise<Message[]> {

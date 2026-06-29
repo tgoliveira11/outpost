@@ -1,0 +1,4 @@
+/* Tailwind v4 source registration for @tgoliveira/outpost admin UI.
+   Import this file from the consuming app's globals.css (after @import "tailwindcss").
+   Published package ships dist/ only — scan compiled UI artifacts below. */
+@source "./dist/modules/ui";

@@ -8,4 +8,5 @@
 export * from "./schema.js";
 export * from "./db.js";
 export * from "./repositories.js";
+export * from "./config-override-repository.js";
 export * from "./mappers.js";
