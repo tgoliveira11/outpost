@@ -15,6 +15,7 @@ import {
 } from "./in-memory-repositories.js";
 
 export * from "./in-memory-repositories.js";
+export * from "./in-memory-config-override-repository.js";
 export { FakeEmailProvider } from "../adapters/providers/fake.js";
 
 /** A controllable clock for deterministic tests. */

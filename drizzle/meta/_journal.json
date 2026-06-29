@@ -8,6 +8,13 @@
       "when": 1782754037502,
       "tag": "0000_nifty_zaran",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782764471402,
+      "tag": "0001_admin_config_overrides",
+      "breakpoints": true
     }
   ]
 }

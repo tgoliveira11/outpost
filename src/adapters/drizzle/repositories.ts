@@ -10,6 +10,7 @@ import type {
   ListMessagesQuery,
   NewApiKey,
 } from "../../ports/repositories.js";
+import type { LifecycleState } from "../../domain/lifecycle.js";
 import type { Message, Sealed } from "../../domain/message.js";
 import type { SuppressionEntry, SuppressionReason } from "../../domain/suppression.js";
 import type { ApiKey } from "../../domain/api-key.js";
@@ -85,6 +86,28 @@ export class DrizzleOutboxRepository implements OutboxRepository {
       .limit(query.limit ?? 50)
       .offset(query.offset ?? 0);
     return rows.map(rowToMessage);
+  }
+
+  async countByState(): Promise<Record<LifecycleState, number>> {
+    const rows = await this.db
+      .select({ state: outbox.state, count: sql<number>`count(*)::int` })
+      .from(outbox)
+      .groupBy(outbox.state);
+
+    const counts: Record<LifecycleState, number> = {
+      queued: 0,
+      sending: 0,
+      sent: 0,
+      delivered: 0,
+      bounced: 0,
+      complained: 0,
+      failed: 0,
+      suppressed: 0,
+    };
+    for (const row of rows) {
+      counts[row.state] = row.count;
+    }
+    return counts;
   }
 
   /**

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Admin UI** (`@tgoliveira/outpost/react`) — ready-made operator pages modeled on
+  `secure-auth`: `AdminPanelPage`, `AdminQueuePage` (email queue + manual send
+  worker), `AdminConfigPage` (vault/env overrides with priority admin → env →
+  default), and `AdminObservabilityPage` (queue depth, last worker run, OTel
+  metric catalog). Ships `styles.css` for Tailwind v4 scanning.
+- **Admin API** (`@tgoliveira/outpost/admin`) — `createOutpostAdmin()` with lazy
+  route handlers for `/admin/queue`, `/admin/worker/send`, `/admin/config`, and
+  `/admin/observability`. Config overrides persist in
+  `outpost_admin_config_overrides` (Drizzle migration `0001`).
+- `OutboxRepository.countByState()` for observability aggregates.
+
 ## [1.1.0] - 2026-06-29
 
 ### Added

@@ -136,6 +136,13 @@ export const apiKeys = pgTable(
   }),
 );
 
+export const adminConfigOverrides = pgTable("outpost_admin_config_overrides", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** The full schema object — pass to `drizzle(client, { schema })`. */
 export const outpostSchema = {
   outbox,
@@ -143,6 +150,7 @@ export const outpostSchema = {
   suppressions,
   webhookEvents,
   apiKeys,
+  adminConfigOverrides,
   lifecycleStateEnum,
   suppressionReasonEnum,
 };
@@ -152,3 +160,4 @@ export type AuditRow = typeof auditEvents.$inferSelect;
 export type SuppressionRow = typeof suppressions.$inferSelect;
 export type WebhookRow = typeof webhookEvents.$inferSelect;
 export type ApiKeyRow = typeof apiKeys.$inferSelect;
+export type AdminConfigOverrideRow = typeof adminConfigOverrides.$inferSelect;
