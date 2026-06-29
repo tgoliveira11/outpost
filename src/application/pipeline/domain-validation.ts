@@ -37,7 +37,13 @@ export interface MxResolver {
 // Pragmatic, conservative address syntax check. Not a full RFC 5322 grammar
 // (that grammar admits forms no provider accepts); this matches what real
 // transactional senders use.
-const ADDR_RE = /^[^\s@"]+(?:\.[^\s@"]+)*@([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+)$/;
+//
+// SECURITY: the local part is a single negated character class with NO nested
+// quantifier. An earlier form, `[^\s@"]+(?:\.[^\s@"]+)*`, was ambiguous (`.`
+// is inside `[^\s@"]`), causing catastrophic backtracking (ReDoS) on inputs
+// like "a.a.a...!" — ~8s for 62 chars. The recipient is attacker-controlled at
+// enqueue, so that was a remote DoS. This form matches/rejects in linear time.
+const ADDR_RE = /^[^\s@"]+@([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+)$/;
 
 export function extractDomain(address: string): string {
   const at = address.lastIndexOf("@");

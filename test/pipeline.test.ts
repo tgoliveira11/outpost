@@ -31,6 +31,20 @@ describe("sanitize", () => {
     expect(() => sanitizeSubject("x".repeat(3000))).toThrow(/exceeds/);
   });
 
+  it("ALLOWS ordinary multi-word subjects (spaces are not control chars)", () => {
+    // Regression: a previous regex rejected any value containing a space.
+    expect(sanitizeSubject("Your receipt for order #1234")).toBe("Your receipt for order #1234");
+    expect(() => assertNoHeaderInjection("subject", "Welcome to Acme, Jane!")).not.toThrow();
+  });
+
+  it("rejects CR, LF, NUL, and DEL but not printable text", () => {
+    expect(() => assertNoHeaderInjection("h", "a\rb")).toThrow();
+    expect(() => assertNoHeaderInjection("h", "a\nb")).toThrow();
+    expect(() => assertNoHeaderInjection("h", "a\0b")).toThrow();
+    expect(() => assertNoHeaderInjection("h", "a\x7fb")).toThrow();
+    expect(() => assertNoHeaderInjection("h", "Perfectly Normal Subject 2024")).not.toThrow();
+  });
+
   it("validates recipients and headers", () => {
     expect(sanitizeRecipient(" a@b.com ")).toBe("a@b.com");
     expect(() => sanitizeRecipient("a@b.com\nx")).toThrow();
@@ -64,9 +78,18 @@ describe("sanitize", () => {
 describe("domain validation", () => {
   it("validates syntax and extracts the domain", () => {
     expect(validateSyntax("user@example.com")).toBe("example.com");
+    expect(validateSyntax("user.name+tag@sub.example.co.uk")).toBe("sub.example.co.uk");
     expect(() => validateSyntax("not-an-email")).toThrow(ValidationError);
     expect(extractDomain("a@b.co.uk")).toBe("b.co.uk");
     expect(() => extractDomain("nodomain")).toThrow();
+  });
+
+  it("validates a malicious address in linear time (no ReDoS)", () => {
+    // Regression: the old local-part regex backtracked catastrophically.
+    const evil = "a" + ".a".repeat(5000) + "!";
+    const start = Date.now();
+    expect(() => validateSyntax(evil)).toThrow(ValidationError);
+    expect(Date.now() - start).toBeLessThan(100); // was multiple seconds
   });
 
   it("MxCache stores and expires entries", () => {
