@@ -15,7 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `scripts/prepare-release.mjs`, `audit:security` + `validate` gates, exact
   tarball packing, registry/tag consistency guards, and automatic Git tag +
   GitHub Release. New `validate`, `audit:security`, and `prepare:release`
-  scripts. See [docs/publishing.md](./docs/publishing.md).
+  scripts. Authentication uses **OIDC trusted publishing** (no stored npm
+  token) under a protected `npmjs` GitHub Environment. See
+  [docs/publishing.md](./docs/publishing.md).
 
 ### Changed
 
