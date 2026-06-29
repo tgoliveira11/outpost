@@ -10,6 +10,9 @@ export default defineConfig({
       include: ["src/**/*.ts"],
       exclude: [
         "src/**/index.ts", // barrels — re-exports only
+        "src/modules/ui/**", // React admin pages — exercised in consuming apps
+        "src/react/**",
+        "src/modules/admin/repositories/**", // port interface only
         "src/adapters/observability/telemetry.ts", // thin OTel wrapper, needs the SDK
         // Type-only modules (interfaces/types — no executable code at runtime):
         "src/ports/**",

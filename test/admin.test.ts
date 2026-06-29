@@ -7,6 +7,7 @@ import {
 } from "../src/testing/index.js";
 import { createOutpostAdmin } from "../src/admin/create-outpost-admin.js";
 import { createConfigOverrideService } from "../src/modules/admin/services/config-override-service.js";
+import { getConfigKeyMeta, maskSecretValue } from "../src/modules/admin/lib/config-keys.js";
 
 describe("Outpost admin", () => {
   const repos = inMemoryRepositories();
@@ -110,5 +111,85 @@ describe("Outpost admin", () => {
     });
     const res = await disabled.routes.adminConfig.GET(new Request("http://localhost/admin/config"));
     expect(res.status).toBe(404);
+  });
+
+  it("admin config GET/POST/DELETE round-trip", async () => {
+    const getRes = await admin.routes.adminConfig.GET(
+      new Request("http://localhost/admin/config"),
+    );
+    expect(getRes.status).toBe(200);
+    const { keys } = await getRes.json();
+    expect(keys.some((k: { key: string }) => k.key === "sendBatchSize")).toBe(true);
+
+    const postRes = await admin.routes.adminConfig.POST(
+      new Request("http://localhost/admin/config", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: "sendBatchSize", value: 42 }),
+      }),
+    );
+    expect(postRes.status).toBe(200);
+
+    const afterPost = await admin.routes.adminConfig.GET(
+      new Request("http://localhost/admin/config"),
+    );
+    const afterBody = await afterPost.json();
+    expect(afterBody.keys.find((k: { key: string }) => k.key === "sendBatchSize")).toMatchObject({
+      source: "admin",
+      value: 42,
+    });
+
+    const delRes = await admin.routes.adminConfig.DELETE(
+      new Request("http://localhost/admin/config", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: "sendBatchSize" }),
+      }),
+    );
+    expect(delRes.status).toBe(200);
+  });
+
+  it("admin config POST rejects unknown keys", async () => {
+    const res = await admin.routes.adminConfig.POST(
+      new Request("http://localhost/admin/config", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: "not.a.real.key", value: 1 }),
+      }),
+    );
+    expect(res.status).toBe(422);
+  });
+
+  it("admin observability GET returns snapshot", async () => {
+    await admin.routes.adminWorkerSend.POST(
+      new Request("http://localhost/admin/worker/send", { method: "POST" }),
+    );
+    const res = await admin.routes.adminObservability.GET(
+      new Request("http://localhost/admin/observability"),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.countsByState).toBeDefined();
+    expect(body.metrics.length).toBeGreaterThan(0);
+    expect(body.lastWorkerRun).not.toBeNull();
+  });
+
+  it("masks short and empty secret values", () => {
+    expect(maskSecretValue("")).toBe("—");
+    expect(maskSecretValue("ab")).toBe("••••");
+    expect(getConfigKeyMeta("missing")).toBeUndefined();
+  });
+
+  it("returns 403 when requireAdmin rejects", async () => {
+    const { AdminForbiddenError } = await import("../src/modules/admin/lib/require-admin.js");
+    const gated = createOutpostAdmin({
+      outpost,
+      configOverrideRepository: new InMemoryConfigOverrideRepository(),
+      requireAdmin: async () => {
+        throw new AdminForbiddenError();
+      },
+    });
+    const res = await gated.routes.adminQueue.GET(new Request("http://localhost/admin/queue"));
+    expect(res.status).toBe(403);
   });
 });

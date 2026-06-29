@@ -8,6 +8,7 @@ import {
   DrizzleApiKeyRepository,
   DrizzleWebhookEventRepository,
 } from "../src/adapters/drizzle/repositories.js";
+import { DrizzleConfigOverrideRepository } from "../src/adapters/drizzle/config-override-repository.js";
 import type { Sealed } from "../src/domain/message.js";
 
 const sealed = (s: string): Sealed => ({ alg: "plain", ciphertext: Buffer.from(s).toString("base64") });
@@ -129,6 +130,14 @@ describe("DrizzleOutboxRepository", () => {
     expect(await outbox.redactBatch([])).toBe(0);
     expect(await outbox.deleteBatch([])).toBe(0);
   });
+
+  it("counts rows by lifecycle state", async () => {
+    const m = await outbox.insert(newMessage());
+    await outbox.updateState(m.id, { state: "failed" });
+    const counts = await outbox.countByState();
+    expect(counts.queued).toBe(0);
+    expect(counts.failed).toBe(1);
+  });
 });
 
 describe("DrizzleSuppressionRepository", () => {
@@ -202,5 +211,25 @@ describe("DrizzleWebhookEventRepository", () => {
     const rows = await (db as any).select().from((await import("../src/adapters/drizzle/schema.js")).webhookEvents);
     expect(rows.length).toBe(1);
     expect(rows[0].raw).toEqual({ foo: "bar" });
+  });
+});
+
+describe("DrizzleConfigOverrideRepository", () => {
+  it("sets, gets, lists, updates, and deletes overrides", async () => {
+    const repo = new DrizzleConfigOverrideRepository(db);
+    expect(await repo.getAll()).toEqual([]);
+
+    const row = await repo.set("sendBatchSize", 25, "admin:test");
+    expect(row.key).toBe("sendBatchSize");
+    expect(row.value).toBe(25);
+
+    expect((await repo.get("sendBatchSize"))?.value).toBe(25);
+    expect((await repo.getAll()).length).toBe(1);
+
+    await repo.set("sendBatchSize", 30, "admin:other");
+    expect((await repo.get("sendBatchSize"))?.value).toBe(30);
+
+    await repo.delete("sendBatchSize");
+    expect(await repo.get("sendBatchSize")).toBeNull();
   });
 });
