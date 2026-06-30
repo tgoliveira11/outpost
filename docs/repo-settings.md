@@ -22,13 +22,13 @@ To inspect or adjust: **Settings → Branches → Branch protection rules → ma
 
 ## `npmjs` environment
 
-The publish job runs under the **`npmjs`** GitHub Environment so publication can
-require an explicit approval gate before npm OIDC trusted publishing runs.
+The publish job runs under the **`npmjs`** GitHub Environment so OIDC trusted
+publishing can match the environment name configured on npmjs.com.
 
 | Rule | Setting |
 |------|---------|
-| Required reviewers | Repository owner (`tgoliveira11`) |
-| Deployment branches | `main` only (recommended) |
+| Required reviewers | None |
+| Deployment branches | `main` only |
 
 To inspect or adjust: **Settings → Environments → npmjs**.
 

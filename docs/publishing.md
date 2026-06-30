@@ -40,7 +40,7 @@ anywhere**. The CI job mints a short-lived OIDC id-token, and npm verifies it
 against the package's configured trusted publisher before allowing the publish.
 
 1. The GitHub Environment named **`npmjs`** already exists in this repo (the
-   workflow runs under it; you can add required reviewers for an approval gate).
+   workflow runs under it; required for OIDC trusted publishing on npmjs.com).
 2. On npmjs.com, configure the package's **Trusted Publisher** (package page →
    Settings → Trusted Publishers, or the org/scope settings). Use:
    - **Provider:** GitHub Actions

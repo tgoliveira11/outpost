@@ -63,7 +63,7 @@ explicitly requests it.
 Full steps: [publishing.md](./publishing.md).
 
 GitHub-side gates: [repo-settings.md](./repo-settings.md) (branch protection,
-`npmjs` environment reviewers).
+`npmjs` environment).
 
 ### Release invariant
 

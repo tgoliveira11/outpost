@@ -272,7 +272,7 @@ you branch:
 - [CHANGELOG.md](./CHANGELOG.md) — note user-visible changes under
   `## [Unreleased]`
 - [docs/repo-settings.md](./docs/repo-settings.md) — GitHub branch protection
-  and `npmjs` environment gates
+  and `npmjs` environment
 - [.cursor/rules/](./.cursor/rules/) — Cursor guardrails when present
 
 Hard rules: branch from `main` with `feature/`/`fix/`/`docs/`/`chore/` prefixes;
