@@ -258,6 +258,28 @@ pass it in `providers: [...]`. Nothing in the core changes.
 To **swap storage**: implement the repository ports
 (`src/ports/repositories.ts`). The Drizzle adapter is one implementation.
 
+## Contributing to this repo (agents & humans)
+
+If you are **changing Outpost itself** (not integrating it), read these before
+you branch:
+
+- [docs/contributing.md](./docs/contributing.md) — branch/PR workflow, Conventional
+  Commits, pre-PR checklist, changelog rules
+- [docs/publishing.md](./docs/publishing.md) — **manual-only** npm releases (never
+  automatic; user must dispatch the workflow)
+- [docs/CURRENT_PRODUCT_SURFACE.md](./docs/CURRENT_PRODUCT_SURFACE.md) — exports,
+  routes, and admin UI inventory (update when the surface changes)
+- [CHANGELOG.md](./CHANGELOG.md) — note user-visible changes under
+  `## [Unreleased]`
+- [docs/repo-settings.md](./docs/repo-settings.md) — GitHub branch protection
+  and `npmjs` environment
+- [.cursor/rules/](./.cursor/rules/) — Cursor guardrails when present
+
+Hard rules: branch from `main` with `feature/`/`fix/`/`docs/`/`chore/` prefixes;
+no direct commits or pushes to `main` unless the user explicitly asks; commits and
+PRs only when the user asks; never run the publish workflow without explicit
+approval.
+
 ## Verifying your integration
 
 ```bash

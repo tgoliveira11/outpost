@@ -1,10 +1,16 @@
 name: Publish package to npmjs
 
+# MANUAL ONLY — triggered exclusively via workflow_dispatch. No push/tag/release
+# triggers. npm publish and GitHub Releases never run automatically.
+#
+# Release invariant: npm @tgoliveira/outpost@X.Y.Z ⟺ git tag vX.Y.Z ⟺
+# GitHub Release vX.Y.Z. Recovery mode (prepare-release recovery=true) completes
+# any missing step after a failed run without bumping the version again.
+#
 # Modeled on the next-secure-auth-starter publish process, adapted for this
-# single-package repo. Manually dispatched: it resolves the release version
-# from the CHANGELOG (or an explicit input), validates, packs the exact
-# tarball, publishes it to npm with provenance, then tags and creates a
-# GitHub release.
+# single-package repo. Resolves the release version from the CHANGELOG (or an
+# explicit input), validates, packs the exact tarball, publishes to npm with
+# provenance, then tags and creates a GitHub release.
 #
 # Authentication is OIDC trusted publishing — NO npm token is stored anywhere.
 # One-time setup required before the first run (see docs/publishing.md):
@@ -60,6 +66,11 @@ jobs:
 
       - name: Audit shipped dependencies for high and critical vulnerabilities
         run: npm run audit:security
+
+      - name: Verify Unreleased changelog (new release vs recovery)
+        env:
+          RELEASE_SPEC: ${{ inputs.version }}
+        run: node scripts/check-release-changelog.mjs
 
       - name: Prepare release version and changelog
         id: release

@@ -5,7 +5,22 @@ All notable changes to `@tgoliveira/outpost` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+Conventions for contributors and agents: [docs/contributing.md](./docs/contributing.md#changelog-conventions).
+
 ## [Unreleased]
+
+### Added
+
+- CI branch-prefix check (`feature/`, `fix/`, `docs/`, `chore/`) on pull requests.
+- `docs/contributing.md`, `docs/repo-settings.md`, `CONTRIBUTING.md`, and Cursor
+  rules for branch/PR/publish workflow.
+- Publish pre-flight script (`scripts/check-release-changelog.mjs`) with clear
+  new-release vs recovery messaging.
+
+### Changed
+
+- Documented manual-only publishing, release invariant, and `[Unreleased]`
+  requirements in `docs/publishing.md` and `AGENTS.md`.
 
 ## [1.2.0] - 2026-06-29
 
