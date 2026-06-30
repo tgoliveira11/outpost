@@ -1,10 +1,33 @@
 # Publishing Outpost to npm
 
-Outpost is published through a manually-dispatched GitHub Actions workflow that
-resolves the version from the CHANGELOG, validates everything, builds the exact
-tarball, and publishes it to npm **with provenance**. The process mirrors the
-`next-secure-auth-starter` release pipeline, adapted for this single-package
+Outpost is published through a **manually-dispatched** GitHub Actions workflow
+that resolves the version from the CHANGELOG, validates everything, builds the
+exact tarball, and publishes it to npm **with provenance**. The process mirrors
+the `next-secure-auth-starter` release pipeline, adapted for this single-package
 repo.
+
+## Manual only — never automatic
+
+**npm publish and GitHub Releases are never triggered automatically.** The
+publish workflow uses `workflow_dispatch` only — there are no `push`, `tag`, or
+`release` triggers. Agents and CI must **not** run it unless a human explicitly
+requests a release.
+
+To publish: Actions → **Publish package to npmjs** → Run workflow (on `main`).
+See [contributing.md](./contributing.md) for the full branch/PR/release rules
+agents follow before a release.
+
+## Release invariant
+
+Every published version must satisfy:
+
+```
+npm @tgoliveira/outpost@X.Y.Z  ⟺  git tag vX.Y.Z  ⟺  GitHub Release vX.Y.Z
+```
+
+The workflow creates all three in one run (or completes the missing pieces in
+**recovery** mode after a failed run). It refuses inconsistent states (e.g. a
+git tag without a matching npm version).
 
 Package: [`@tgoliveira/outpost`](https://www.npmjs.com/package/@tgoliveira/outpost)
 · Workflow: [`.github/workflows/publish.yml`](../.github/workflows/publish.yml)
@@ -41,7 +64,12 @@ already sets `publishConfig.access = "public"` and
 ## How to cut a release
 
 1. Land your changes on `main`, with notes under the `## [Unreleased]` section
-   of [`CHANGELOG.md`](../CHANGELOG.md).
+   of [`CHANGELOG.md`](../CHANGELOG.md). **New versions require non-empty
+   Unreleased content** — the workflow bumps the version from those notes. If
+   `[Unreleased]` is empty, the run enters **recovery mode** only (retry npm
+   publish, git tag, and GitHub Release for the version already in
+   `package.json`, with no bump). Recovery is for failed or partial publishes,
+   not for shipping new work.
 2. Run the **"Publish package to npmjs"** workflow
    (Actions tab → Run workflow), on `main`. Optionally set the `version` input:
    - **blank / `auto`** → version inferred from the Unreleased changelog
@@ -90,11 +118,18 @@ npm publish --dry-run --access public                 # full publish rehearsal, 
 
 ## Notes
 
-- The workflow is **dispatch-only** and guarded with `if: github.ref ==
-  'refs/heads/main'` and a `concurrency` group, so two publishes can't race.
-- It refuses to publish a version that already exists on npm, and refuses to tag
-  a release that wasn't published — keeping npm, the git tag, and the GitHub
-  Release consistent.
-- If a run fails after the version bump but before publish, re-dispatching
-  enters `recovery` mode and re-attempts the existing version without bumping
-  again.
+- **Trigger:** `workflow_dispatch` only — no automatic publish on push, tags, or
+  GitHub Releases.
+- **Branch guard:** `if: github.ref == 'refs/heads/main'` plus a `concurrency`
+  group so two publishes cannot race.
+- **Consistency:** refuses to publish a version that already exists on npm
+  (except recovery), and refuses a git tag when npm does not have that version.
+- **Recovery:** if a run fails after the version bump or mid-publish,
+  re-dispatch on `main` with an **empty** `[Unreleased]` section. Recovery
+  re-uses the current `package.json` version, skips the changelog bump,
+  publishes to npm if needed, creates the `vX.Y.Z` tag if missing, and creates
+  the GitHub Release if missing. Passing `patch`/`minor`/`major` with empty
+  Unreleased fails early with a clear error.
+- **Changelog:** agents document in-flight work under `## [Unreleased]` per
+  [contributing.md](./contributing.md); the workflow rolls it into the dated
+  release section.

@@ -1,0 +1,32 @@
+---
+description: Branch, PR, commit, and publish guardrails for Outpost
+alwaysApply: true
+---
+
+# Branch, PR, and publish workflow
+
+Read [AGENTS.md](../../AGENTS.md), [docs/contributing.md](../../docs/contributing.md), and [docs/publishing.md](../../docs/publishing.md) before changing this repo.
+
+## Git
+
+- Branch from `main` with `feature/`, `fix/`, `docs/`, or `chore/` prefix.
+- No direct commits to `main` unless the user explicitly asks.
+- Never push to `main` without explicit user approval.
+- Commits only when the user asks; use Conventional Commits.
+
+## Pre-PR
+
+- Run `npm run validate`.
+- Update `CHANGELOG.md` (`## [Unreleased]`) and `docs/CURRENT_PRODUCT_SURFACE.md` when the surface changes.
+- Never stage secrets or `.env` files.
+- Branch prefixes (`feature/`, `fix/`, `docs/`, `chore/`) are enforced in CI on PRs.
+
+## Pull requests
+
+- `gh pr create` only when the user asks.
+- Do not merge, approve, or push without explicit approval. Prefer squash merge.
+
+## Publishing
+
+- **Never** run the publish workflow or `npm publish` unless the user explicitly requests it.
+- npm, git tag `vX.Y.Z`, and GitHub Release `vX.Y.Z` must stay in sync (see publishing.md).

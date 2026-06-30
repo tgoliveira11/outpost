@@ -9,6 +9,18 @@ permissions:
   contents: read
 
 jobs:
+  branch-name:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require feature/, fix/, docs/, or chore/ branch prefix
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          if [[ ! "$BRANCH" =~ ^(feature|fix|docs|chore)/ ]]; then
+            echo "::error::Branch '${BRANCH}' must start with feature/, fix/, docs/, or chore/ (see docs/contributing.md)."
+            exit 1
+          fi
+
   validate:
     runs-on: ubuntu-latest
     steps:
